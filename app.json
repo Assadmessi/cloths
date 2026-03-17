@@ -12,10 +12,6 @@
     },
     "android": {
       "package": "com.asaad.clothingos"
-    },
-    "plugins": [
-      "expo-asset",
-      "expo-font"
-    ]
+    }
   }
 }

@@ -1,67 +1,39 @@
 import React from 'react';
-import { Dimensions, ScrollView, Text } from 'react-native';
-import { LineChart, PieChart } from 'react-native-chart-kit';
+import { Dimensions, Text } from 'react-native';
+import { PieChart } from 'react-native-chart-kit';
 import { Card, Screen } from '../components/ui';
-import { useBusinessData } from '../hooks/useBusinessData';
+import { useData } from '../context/DataContext';
+import { formatMMK } from '../utils/format';
 import { colors } from '../theme';
 
-const screenWidth = Dimensions.get('window').width - 32;
-
 export default function ReportsScreen() {
-  const data = useBusinessData();
-
-  const salesData = {
-    labels: data.sales.map((s) => s.date.slice(5)),
-    datasets: [{ data: data.sales.map((s) => s.qty * s.pricePerPiece) }]
-  };
-
-  const expenseData = data.expensesList.map((e, index) => ({
-    name: e.category,
-    amount: e.amount,
-    color: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444'][index % 4],
-    legendFontColor: '#334155',
-    legendFontSize: 12
-  }));
-
+  const { sales, expenses, products, shareholders, promotions, revenue, netProfit } = useData();
+  const width = Dimensions.get('window').width - 48;
+  const pieData = [
+    { name: 'Sales', amount: revenue, color: '#1C6DD0', legendFontColor: colors.text, legendFontSize: 12 },
+    { name: 'Expenses', amount: expenses.reduce((a,b)=>a+Number(b.amount),0), color: '#E0A100', legendFontColor: colors.text, legendFontSize: 12 },
+    { name: 'Net Profit', amount: Math.max(0, netProfit), color: '#1B9C85', legendFontColor: colors.text, legendFontSize: 12 }
+  ];
   return (
-    <Screen>
-      <ScrollView>
-        <Card title="Sales Trend">
-          <LineChart
-            data={salesData}
-            width={screenWidth}
-            height={220}
-            chartConfig={{
-              backgroundGradientFrom: '#ffffff',
-              backgroundGradientTo: '#ffffff',
-              decimalPlaces: 0,
-              color: () => colors.primary,
-              labelColor: () => colors.text
-            }}
-            bezier
-            style={{ borderRadius: 16 }}
-          />
-        </Card>
-
-        <Card title="Expense Breakdown">
-          <PieChart
-            data={expenseData}
-            width={screenWidth}
-            height={220}
-            accessor="amount"
-            backgroundColor="transparent"
-            paddingLeft="10"
-            chartConfig={{
-              color: () => colors.text,
-              labelColor: () => colors.text
-            }}
-          />
-        </Card>
-
-        <Card title="Report Coverage">
-          <Text>Includes profit trends, sales charts, expense breakdown, product performance, promotion impact, and shareholder earnings.</Text>
-        </Card>
-      </ScrollView>
+    <Screen scroll>
+      <Card title="Financial Summary">
+        <Text>Total revenue: {formatMMK(revenue)}</Text>
+        <Text>Net profit: {formatMMK(netProfit)}</Text>
+        <Text>Sales records: {sales.length} · Expense records: {expenses.length}</Text>
+        <Text>Products tracked: {products.length} · Shareholders: {shareholders.length} · Promotions: {promotions.length}</Text>
+      </Card>
+      <Card title="Business Mix Chart">
+        <PieChart
+          data={pieData}
+          width={width}
+          height={220}
+          accessor="amount"
+          backgroundColor="transparent"
+          paddingLeft="12"
+          chartConfig={{ color: () => colors.text, labelColor: () => colors.text }}
+          absolute
+        />
+      </Card>
     </Screen>
   );
 }

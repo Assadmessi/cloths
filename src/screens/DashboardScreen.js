@@ -1,50 +1,57 @@
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
-import { useBusinessData } from '../hooks/useBusinessData';
-import { Badge, Card, Screen, Stat } from '../components/ui';
+import { Text, View } from 'react-native';
+import { Badge, Card, Row, Screen, Stat } from '../components/ui';
+import { useData } from '../context/DataContext';
 import { formatMMK, percent } from '../utils/format';
 
 export default function DashboardScreen() {
-  const data = useBusinessData();
+  const { totalMoney, netProfit, expensesTotal, stockValue, recommendations, products, promotions, shareholders } = useData();
+  const lowMarginCount = products.filter((p) => p.pricing.lowMargin).length;
+  const unsafePromoCount = promotions.filter((p) => p.unsafe).length;
 
   return (
-    <Screen>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Card title="Business Snapshot" right={<Badge text="Myanmar MMK" />}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-            <Stat label="Total Money" value={formatMMK(data.cash)} />
-            <Stat label="Net Profit" value={formatMMK(data.netProfit)} tone={data.netProfit > 0 ? 'primary' : 'danger'} />
-            <Stat label="Expenses" value={formatMMK(data.expenses)} tone="warning" />
-            <Stat label="Stock Value" value={formatMMK(data.stockValue)} />
+    <Screen scroll>
+      <Row>
+        <Stat label="Total Money" value={formatMMK(totalMoney)} />
+        <Stat label="Net Profit" value={formatMMK(netProfit)} tone={netProfit >= 0 ? 'secondary' : 'danger'} />
+      </Row>
+      <Row>
+        <Stat label="Expenses" value={formatMMK(expensesTotal)} tone="warning" />
+        <Stat label="Stock Value" value={formatMMK(stockValue)} />
+      </Row>
+
+      <Card title="Recommended Actions">
+        {recommendations.map((item, idx) => (
+          <Badge key={idx} text={item} tone="secondary" />
+        ))}
+      </Card>
+
+      <Card title="Pricing Alerts">
+        <Text>{lowMarginCount} product(s) are below the healthy margin threshold.</Text>
+        {products.slice(0, 3).map((p) => (
+          <View key={p.id} style={{ gap: 6, paddingVertical: 6 }}>
+            <Text style={{ fontWeight: '700' }}>{p.name}</Text>
+            <Text>Safe: {formatMMK(p.pricing.minimumPrice)} · Current: {formatMMK(p.currentSellingPrice || p.pricing.recommendedPrice)}</Text>
+            <Text>Margin: {percent(p.pricing.margin)}</Text>
           </View>
-        </Card>
+        ))}
+      </Card>
 
-        <Card title="Recommended Actions">
-          {data.recommendedActions.map((item, idx) => (
-            <Text key={idx}>• {item}</Text>
-          ))}
-        </Card>
+      <Card title="Promotion Signals">
+        <Text>{unsafePromoCount} promotion(s) are unsafe right now.</Text>
+        {promotions.map((promo) => (
+          <View key={promo.id} style={{ gap: 4, paddingVertical: 6 }}>
+            <Text style={{ fontWeight: '700' }}>{promo.title}</Text>
+            <Text>{promo.productName} · Discounted: {formatMMK(promo.discountedPrice)} · Margin: {percent(promo.promotionMargin)}</Text>
+          </View>
+        ))}
+      </Card>
 
-        <Card title="Pricing Alerts">
-          {data.products.map((product) => (
-            <View key={product.id} style={{ marginBottom: 10 }}>
-              <Text>{product.name}</Text>
-              <Text>Cost: {formatMMK(product.pricing.productionCostPerPiece)} | Margin: {percent(product.pricing.margin)}</Text>
-              {product.pricing.isUnsafe && <Badge text="Unsafe price" tone="danger" />}
-              {product.pricing.lowMargin && <Badge text="Low margin" tone="warning" />}
-            </View>
-          ))}
-        </Card>
-
-        <Card title="Promotion Suggestions">
-          {data.promotions.map((promo) => (
-            <View key={promo.productId} style={{ marginBottom: 10 }}>
-              <Text>{promo.productName}</Text>
-              <Text>Promo profit: {formatMMK(promo.promotionProfit)} | Promo margin: {percent(promo.promotionMargin)}</Text>
-            </View>
-          ))}
-        </Card>
-      </ScrollView>
+      <Card title="Shareholder Snapshot">
+        {shareholders.map((sh) => (
+          <Text key={sh.id}>{sh.name}: {percent(sh.ownership)} ownership</Text>
+        ))}
+      </Card>
     </Screen>
   );
 }

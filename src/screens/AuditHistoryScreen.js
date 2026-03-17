@@ -1,50 +1,24 @@
 import React from 'react';
-import { ScrollView, Text } from 'react-native';
-import { Badge, Card, Screen } from '../components/ui';
-
-const demoLogs = [
-  {
-    id: 'log-1',
-    entityType: 'products',
-    entityId: 'prod-shirt-001',
-    action: 'update',
-    message: 'Manager updated price from 5000 MMK to 6500 MMK',
-    timestamp: '2026-03-12 10:22'
-  },
-  {
-    id: 'log-2',
-    entityType: 'promotions',
-    entityId: 'promo-1',
-    action: 'create',
-    message: 'Admin created Thingyan campaign with 10% discount',
-    timestamp: '2026-03-13 12:05'
-  },
-  {
-    id: 'log-3',
-    entityType: 'auditLogs',
-    entityId: 'retention-job',
-    action: 'archive',
-    message: 'System archived 365-day old history records',
-    timestamp: '2026-03-15 00:00'
-  }
-];
+import { Text } from 'react-native';
+import { Badge, Card, EmptyState, Screen } from '../components/ui';
+import { useData } from '../context/DataContext';
 
 export default function AuditHistoryScreen() {
+  const { auditLogs } = useData();
   return (
-    <Screen>
-      <ScrollView>
-        <Card title="Audit Policy">
-          <Text>All actions generate immutable history records. Users cannot edit or delete logs. Retention is 1 year, then archive or auto-delete with system log.</Text>
+    <Screen scroll>
+      <Card title="Audit History">
+        <Text>Read-only. Users cannot edit or delete these records. Retention rule is 365 days.</Text>
+      </Card>
+      {!auditLogs.length ? <EmptyState title="No audit events yet" subtitle="Create or edit data and the logs will appear here." /> : auditLogs.map((log) => (
+        <Card key={log.id} title={`${log.entityType} · ${log.action}`} right={<Badge text={log.role} tone={log.role === 'system' ? 'warning' : 'primary'} />}>
+          <Text>{log.message}</Text>
+          <Text>Field: {log.fieldChanged}</Text>
+          <Text>Old: {String(log.oldValue)}</Text>
+          <Text>New: {String(log.newValue)}</Text>
+          <Text>User: {log.userName} · {new Date(log.timestamp).toLocaleString()}</Text>
         </Card>
-
-        {demoLogs.map((log) => (
-          <Card key={log.id} title={log.entityType} right={<Badge text={log.action} />}>
-            <Text>{log.message}</Text>
-            <Text>ID: {log.entityId}</Text>
-            <Text>{log.timestamp}</Text>
-          </Card>
-        ))}
-      </ScrollView>
+      ))}
     </Screen>
   );
 }
